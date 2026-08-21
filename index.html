@@ -335,7 +335,7 @@ if (!TOKEN) { try{ TOKEN = localStorage.getItem(K_TOKEN) || ''; }catch(e){} }
 const FOLIO = (P.get('f') || '').trim();
 const MODO  = FOLIO ? 'completar' : 'crear';
 
-let cats = {}, despachado = false, cancelada = false, ocupado = false, factura = '', extra = false;
+let cats = {}, usuario = '', despachado = false, cancelada = false, ocupado = false, factura = '', extra = false;
 
 const $ = id => document.getElementById(id);
 const hay = v => !!(v && String(v).trim());
@@ -397,17 +397,19 @@ function agrupar(lista){
 async function cargarCatalogos(){
   try{
     const cache = JSON.parse(localStorage.getItem(K_CAT) || 'null');
-    /* solo sirve si es reciente y trae la forma nueva {val,grp} */
+    /* solo sirve si es reciente, trae la forma nueva {val,grp} y trae el usuario */
     const util = cache && (Date.now() - cache.ts) < 86400000
               && cache.datos && cache.datos.Lugar
-              && cache.datos.Lugar[0] && typeof cache.datos.Lugar[0] === 'object';
-    if (util){ cats = cache.datos; return true; }
+              && cache.datos.Lugar[0] && typeof cache.datos.Lugar[0] === 'object'
+              && cache.usuario;
+    if (util){ cats = cache.datos; usuario = cache.usuario; return true; }
   }catch(e){}
   const r = await llamar({accion:'catalogos'});
   if (r.estado === 401) return 'auth';
   if (!r.ok || !r.datos || !r.datos.ok) return false;
   cats = agrupar(r.datos.catalogos);
-  try{ localStorage.setItem(K_CAT, JSON.stringify({ts:Date.now(), datos:cats})); }catch(e){}
+  usuario = r.datos.usuario || '';
+  try{ localStorage.setItem(K_CAT, JSON.stringify({ts:Date.now(), datos:cats, usuario:usuario})); }catch(e){}
   return true;
 }
 
@@ -676,6 +678,7 @@ $('btnConfirmarCancel').addEventListener('click', async function(){
 
 /* ---------- arranque ---------- */
 function pintarHero(d){
+  $('hQuien').textContent = usuario || '—';
   if (MODO === 'crear'){
     $('hRotulo').textContent = 'Nueva solicitud';
     $('hFolio').textContent  = new Date().toLocaleDateString('es-MX', {day:'numeric', month:'long'});
@@ -684,7 +687,7 @@ function pintarHero(d){
     $('hRotulo').textContent = 'Número de solicitud';
     $('hFolio').textContent  = d.Folio || FOLIO;
     $('hFolio').classList.remove('nueva');
-    $('hQuien').textContent   = d.Solicitante || '—';
+    $('hQuien').textContent   = d.Solicitante || usuario || '—';
     $('hEstatus').textContent = d.Estatus || '—';
     $('hUnidad').textContent  = hay(d.TruckId) ? d.TruckId : 'Sin asignar';
     $('hGrid').hidden = false;
