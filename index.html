@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Solicitud de transporte · Taylor Farms Baja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --negro:#191917; --negro-suave:#26261F; --carbon:#22261F;
+    --oro:#F0A81F; --oro-osc:#8A5E0E; --oro-suave:#FDF3DC;
+    --hoja:#4E9D2D; --hoja-osc:#33741B; --hoja-suave:#F0F7EB;
+    --crema:#F6F4EC; --blanco:#FFFFFF; --gris:#6E7168; --linea:#DDDBD0;
+    --rojo:#B3402E; --rojo-suave:#FBF1EF;
+    --radius:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Barlow',system-ui,sans-serif; background:var(--crema); color:var(--carbon);
+    font-size:17px; line-height:1.45; min-height:100vh; display:flex; justify-content:center;
+    -webkit-text-size-adjust:100%;}
+  .phone{width:100%; max-width:430px; min-height:100vh; display:flex; flex-direction:column;}
+  [hidden]{display:none !important;}
+
+  /* ---------- encabezado ---------- */
+  header{background:var(--negro); color:#fff; padding:16px 20px;}
+  .marca{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .marca img{height:44px; width:auto;}
+  .marca .depto{font-size:12.5px; color:var(--oro); letter-spacing:.08em; text-transform:uppercase; font-weight:600;}
+  .placa{background:var(--negro-suave); border:1px solid rgba(240,168,31,.35); border-radius:var(--radius); padding:14px 16px;}
+  .placa-top{display:flex; justify-content:space-between; align-items:flex-start; gap:14px;}
+  .oc-label{font-size:11.5px; text-transform:uppercase; letter-spacing:.1em; color:rgba(255,255,255,.55);}
+  .oc{font-family:'Barlow Semi Condensed'; font-weight:700; font-size:29px; line-height:1.1; color:#fff;}
+  .oc.nueva{font-size:23px;}
+  .dato{min-width:0;}
+  .dato .l{font-size:11px; text-transform:uppercase; letter-spacing:.09em; color:rgba(255,255,255,.55);}
+  .dato .v{font-family:'Barlow Semi Condensed'; font-weight:700; font-size:15.5px; color:#fff; letter-spacing:.03em;
+    overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .placa-der{text-align:right; flex-shrink:0;}
+  .placa-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px; padding-top:12px;
+    border-top:1px dashed rgba(240,168,31,.45);}
+  .placa-grid .dato:last-child{text-align:right;}
+
+  /* ---------- avisos ---------- */
+  .aviso{margin-top:16px; border-radius:var(--radius); padding:12px 16px; font-size:14.5px; font-weight:500;}
+  .aviso-rojo{background:var(--rojo-suave); border:1px solid var(--rojo); color:var(--rojo);}
+
+  main{flex:1; padding:6px 20px 130px;}
+
+  h2{font-family:'Barlow Semi Condensed'; font-weight:700; font-size:15px; text-transform:uppercase;
+    letter-spacing:.12em; color:var(--gris); margin:0 2px 10px; padding-top:24px;}
+
+  .caja{background:var(--blanco); border:1px solid var(--linea); border-radius:var(--radius); padding:16px;}
+  .caja.oro{border-color:var(--oro); background:#FFFDF8;}
+
+  /* ---------- campos ---------- */
+  .campo{margin-bottom:14px;}
+  .campo:last-child{margin-bottom:0;}
+  .fila2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  label{display:block; font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--gris); margin-bottom:6px;}
+  label .req{color:var(--oro-osc);}
+  input[type=text], input[type=number], input[type=date], select, textarea{
+    width:100%; font-family:inherit; font-size:16px; color:var(--carbon); background:var(--blanco);
+    border:1.5px solid var(--linea); border-radius:10px; padding:13px 12px; appearance:none;}
+  select{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236E7168' stroke-width='2.5' stroke-linecap='round'><path d='M6 9l6 6 6-6'/></svg>");
+    background-repeat:no-repeat; background-position:right 11px center; background-size:18px; padding-right:36px;}
+  textarea{min-height:84px; resize:vertical; line-height:1.4;}
+  input:focus, select:focus, textarea:focus{outline:0; border-color:var(--oro); box-shadow:0 0 0 3px rgba(240,168,31,.18);}
+  input:disabled, select:disabled, textarea:disabled{background:#F4F3EE; color:var(--gris);}
+  .fuera{font-size:12.5px; color:var(--oro-osc); margin-top:6px; font-weight:600;}
+
+  /* ---------- segmentado Si/No ---------- */
+  .seg{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
+  .seg button{font-family:inherit; font-size:16px; font-weight:600; padding:13px; cursor:pointer;
+    background:var(--blanco); border:1.5px solid var(--linea); border-radius:10px; color:var(--gris);}
+  .seg button.on{background:var(--hoja-suave); border-color:var(--hoja); color:var(--hoja-osc);}
+  .seg button:disabled{opacity:.55; cursor:default;}
+  .seg button:focus-visible, .sw:focus-visible, .cta:focus-visible, .btn-txt:focus-visible,
+  input:focus-visible, select:focus-visible, textarea:focus-visible{outline:3px solid var(--oro); outline-offset:2px;}
+
+  /* ---------- interruptor de recoleccion extra ---------- */
+  .sw{display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
+    background:var(--blanco); border:1.5px solid var(--linea); border-radius:var(--radius);
+    padding:15px 16px; font-family:inherit; font-size:16.5px; font-weight:600; color:var(--carbon);
+    text-align:left; cursor:pointer;}
+  .sw.on{border-color:var(--oro); background:#FFFDF8;}
+  .sw:disabled{opacity:.55; cursor:default;}
+  .sw .pastilla{width:44px; height:26px; border-radius:99px; background:var(--linea); position:relative;
+    flex-shrink:0; transition:background .18s;}
+  .sw .pastilla::after{content:''; position:absolute; top:3px; left:3px; width:20px; height:20px; border-radius:50%;
+    background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.3); transition:transform .18s;}
+  .sw.on .pastilla{background:var(--oro);}
+  .sw.on .pastilla::after{transform:translateX(18px);}
+  #cajaExtra{margin-top:12px;}
+
+  /* ---------- barra inferior ---------- */
+  .barra{position:fixed; bottom:0; left:50%; transform:translateX(-50%); width:100%; max-width:430px;
+    background:linear-gradient(transparent, var(--crema) 28%);
+    padding:22px 20px calc(16px + env(safe-area-inset-bottom));}
+  .cta{width:100%; border:0; border-radius:var(--radius); background:var(--hoja-osc); color:#fff;
+    font-family:inherit; font-weight:600; font-size:18px; padding:17px; cursor:pointer;}
+  .cta:disabled{background:#A9B3A5; cursor:default;}
+  .btn-txt{display:block; width:100%; margin-top:26px; background:none; border:0; color:var(--rojo);
+    font-family:inherit; font-size:15.5px; font-weight:600; padding:12px; cursor:pointer; text-decoration:underline;}
+
+  /* ---------- pantallas de estado ---------- */
+  .centro{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+    padding:50px 30px; text-align:center; gap:14px;}
+  .centro .ico{font-size:44px; line-height:1;}
+  .centro h3{font-family:'Barlow Semi Condensed'; font-weight:700; font-size:26px;}
+  .centro p{color:var(--gris); font-size:15.5px;}
+  .centro .cta{max-width:280px; margin-top:10px;}
+  .giro{width:30px; height:30px; border:3px solid var(--linea); border-top-color:var(--oro);
+    border-radius:50%; animation:g .8s linear infinite;}
+  @keyframes g{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion: reduce){ *{transition:none !important; animation-duration:2.5s !important;} }
+
+  /* ---------- hoja de dialogo ---------- */
+  .velo{position:fixed; inset:0; background:rgba(25,25,23,.7); z-index:40;
+    display:flex; align-items:flex-end; justify-content:center;}
+  .hoja{background:var(--blanco); border-radius:18px 18px 0 0;
+    padding:24px 20px calc(24px + env(safe-area-inset-bottom)); width:100%; max-width:430px;}
+  .hoja h3{font-family:'Barlow Semi Condensed'; font-weight:700; font-size:21px; margin-bottom:8px;}
+  .hoja p{color:var(--gris); font-size:15px; margin-bottom:16px;}
+  .hoja .alerta{background:var(--rojo-suave); border:1px solid var(--rojo); color:var(--rojo);
+    border-radius:10px; padding:11px 13px; font-size:14px; font-weight:600; margin-bottom:16px;}
+  .hoja .cta{background:var(--rojo);}
+  .hoja .volver{width:100%; margin-top:9px; background:var(--blanco); border:1.5px solid var(--linea);
+    border-radius:var(--radius); padding:15px; font-family:inherit; font-size:16px; font-weight:600;
+    color:var(--carbon); cursor:pointer;}
+  @media(min-width:520px){ .velo{align-items:center; padding:20px} .hoja{border-radius:18px; max-width:400px} }
+
+  /* ---------- cinta ---------- */
+  .cinta{position:fixed; left:50%; transform:translateX(-50%); bottom:104px; background:var(--carbon); color:#fff;
+    padding:12px 20px; border-radius:99px; font-size:15px; font-weight:500; z-index:50; max-width:88%; text-align:center;}
+  .cinta.mal{background:var(--rojo);}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <header>
+    <div class="marca">
+      <img id="logo" src="logo.png" onerror="this.onerror=null;this.src='logo.jpg'" alt="Taylor Farms">
+      <span class="depto">Compras</span>
+    </div>
+    <div class="placa">
+      <div class="placa-top">
+        <div>
+          <div class="oc-label" id="hRotulo">Nueva solicitud</div>
+          <div class="oc nueva" id="hFolio">—</div>
+        </div>
+        <div class="placa-der">
+          <div class="dato"><div class="l">Solicita</div><div class="v" id="hQuien">—</div></div>
+        </div>
+      </div>
+      <div class="placa-grid" id="hGrid" hidden>
+        <div class="dato"><div class="l">Estatus</div><div class="v" id="hEstatus">—</div></div>
+        <div class="dato"><div class="l">Unidad</div><div class="v" id="hUnidad">—</div></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="centro" id="pCargando">
+    <div class="giro"></div>
+    <p>Cargando…</p>
+  </div>
+
+  <div class="centro" id="pError" hidden>
+    <div class="ico">&#128274;</div>
+    <h3 id="eTit">Sin acceso</h3>
+    <p id="eTxt"></p>
+  </div>
+
+  <div class="centro" id="pListo" hidden>
+    <div class="ico">&#9989;</div>
+    <h3 id="lTit">Solicitud enviada</h3>
+    <p id="lTxt">Tu folio llegará por correo en unos minutos.</p>
+    <button class="cta" id="btnOtra">Crear otra solicitud</button>
+  </div>
+
+  <main id="pForm" hidden>
+
+    <div class="aviso aviso-rojo" id="avisoCancelada" hidden>
+      Esta solicitud está cancelada. Ya no se puede editar.
+    </div>
+
+    <h2>Datos de la solicitud</h2>
+    <div class="caja">
+      <div class="fila2">
+        <div class="campo">
+          <label for="fecha">Fecha <span class="req">*</span></label>
+          <input type="date" id="fecha">
+        </div>
+        <div class="campo">
+          <label for="hora">Hora <span class="req">*</span></label>
+          <select id="hora"><option value="">—</option></select>
+        </div>
+      </div>
+      <div class="campo">
+        <label for="tipoServicio">Tipo de servicio <span class="req">*</span></label>
+        <select id="tipoServicio"><option value="">Selecciona</option></select>
+      </div>
+      <div class="campo">
+        <label for="origen">Origen <span class="req">*</span></label>
+        <select id="origen"><option value="">Selecciona</option></select>
+        <div class="fuera" id="fueraOrigen" hidden></div>
+      </div>
+      <div class="campo">
+        <label for="destino">Destino <span class="req">*</span></label>
+        <select id="destino"><option value="">Selecciona</option></select>
+        <div class="fuera" id="fueraDestino" hidden></div>
+      </div>
+      <div class="campo">
+        <label>¿Lleva factura? <span class="req">*</span></label>
+        <div class="seg" id="segFactura">
+          <button type="button" data-v="Sí">Sí</button>
+          <button type="button" data-v="No">No</button>
+        </div>
+      </div>
+    </div>
+
+    <h2>Detalle de la carga</h2>
+    <div class="caja">
+      <div class="campo">
+        <label for="producto">Producto</label>
+        <select id="producto"><option value="">Selecciona</option></select>
+        <div class="fuera" id="fueraProducto" hidden></div>
+      </div>
+      <div class="campo">
+        <label for="tarimas">Tarimas</label>
+        <input type="number" id="tarimas" inputmode="numeric" min="1" placeholder="Total del viaje">
+      </div>
+      <div class="fila2">
+        <div class="campo">
+          <label for="po">PO</label>
+          <input type="text" id="po" inputmode="numeric">
+        </div>
+        <div class="campo">
+          <label for="so">SO</label>
+          <input type="text" id="so" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+
+    <h2>Recolección extra</h2>
+    <button type="button" class="sw" id="swExtra">
+      <span>Este viaje tiene segunda recolección</span>
+      <span class="pastilla"></span>
+    </button>
+    <div class="caja oro" id="cajaExtra" hidden>
+      <div class="campo">
+        <label for="origen2">Origen 2</label>
+        <select id="origen2"><option value="">Selecciona</option></select>
+        <div class="fuera" id="fueraOrigen2" hidden></div>
+      </div>
+      <div class="campo">
+        <label for="producto2">Producto 2</label>
+        <select id="producto2"><option value="">Selecciona</option></select>
+        <div class="fuera" id="fueraProducto2" hidden></div>
+      </div>
+      <div class="fila2">
+        <div class="campo">
+          <label for="po2">PO 2</label>
+          <input type="text" id="po2" inputmode="numeric">
+        </div>
+        <div class="campo">
+          <label for="so2">SO 2</label>
+          <input type="text" id="so2" inputmode="numeric">
+        </div>
+      </div>
+    </div>
+
+    <h2>Comentarios</h2>
+    <div class="caja">
+      <div class="campo">
+        <textarea id="comentarios" placeholder="Cualquier indicación para Transportes"></textarea>
+      </div>
+    </div>
+
+    <button type="button" class="btn-txt" id="btnCancelar" hidden>Cancelar esta solicitud</button>
+  </main>
+
+  <div class="barra" id="barra" hidden>
+    <button class="cta" id="btnEnviar" disabled>Enviar solicitud</button>
+  </div>
+</div>
+
+<div class="velo" id="velo" hidden>
+  <div class="hoja" role="dialog" aria-modal="true">
+    <h3>¿Cancelar la solicitud?</h3>
+    <div class="alerta" id="alertaDespacho" hidden>
+      Este viaje ya fue despachado y el operador puede ir en camino. Al cancelar se elimina el evento de calendario y se envía el aviso.
+    </div>
+    <p id="txtCancelar">Esta acción no se puede deshacer.</p>
+    <div class="campo">
+      <label for="motivo">Motivo <span class="req" id="motivoReq" hidden>*</span></label>
+      <textarea id="motivo" placeholder="¿Por qué se cancela?"></textarea>
+    </div>
+    <button class="cta" id="btnConfirmarCancel">Sí, cancelar</button>
+    <button class="volver" id="btnVolver">Volver</button>
+  </div>
+</div>
+
+<div class="cinta" id="cinta" hidden></div>
+
+<script>
+/* ===================== CONFIGURACION ===================== */
+const API = "https://default0b031fc984e1487c945fe6dbd618cd.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/747cffcda6e148c6a81ac143e9899342/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=SO0nNdpk41WNGlPeAmB86Db7Y6RmErvOXX9oSHkNT4k";
+/* ========================================================= */
+
+const K_TOKEN = 'tfb_compras_token';
+const K_CAT   = 'tfb_compras_catalogos';
+const K_DRAFT = 'tfb_compras_borrador';
+
+const P = new URLSearchParams(location.search);
+if (P.get('t')) { try{ localStorage.setItem(K_TOKEN, P.get('t')); }catch(e){} }
+let TOKEN = P.get('t') || '';
+if (!TOKEN) { try{ TOKEN = localStorage.getItem(K_TOKEN) || ''; }catch(e){} }
+const FOLIO = (P.get('f') || '').trim();
+const MODO  = FOLIO ? 'completar' : 'crear';
+
+let cats = {}, despachado = false, cancelada = false, ocupado = false, factura = '', extra = false;
+
+const $ = id => document.getElementById(id);
+const hay = v => !!(v && String(v).trim());
+
+/* ---------- comunicacion ---------- */
+async function llamar(cuerpo){
+  const r = await fetch(API, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain'},
+    body: JSON.stringify(Object.assign({t:TOKEN}, cuerpo))
+  });
+  let d = null; try { d = await r.json(); } catch(e){}
+  return { estado:r.status, ok:r.ok, datos:d };
+}
+
+function cinta(msg, mal){
+  const c = $('cinta');
+  c.textContent = msg;
+  c.className = 'cinta' + (mal ? ' mal' : '');
+  c.hidden = false;
+  clearTimeout(c._t);
+  c._t = setTimeout(function(){ c.hidden = true; }, mal ? 5000 : 2600);
+}
+
+function errorLegible(r){
+  const e = r.datos && r.datos.error;
+  return ({
+    NO_EXISTE:'No encontramos esa solicitud.',
+    NO_ES_TUYA:'No encontramos esa solicitud.',
+    YA_CANCELADA:'Esta solicitud ya estaba cancelada.',
+    MOTIVO_REQUERIDO:'Escribe el motivo de la cancelación.',
+    FALTAN_CAMPOS:'Faltan campos obligatorios.',
+    CANCELADA:'Esta solicitud está cancelada y ya no se puede editar.',
+    SIN_FILA_EXCEL:'La solicitud no está en la hoja de captura. Avisa a Transportes.',
+    SIN_ARCHIVO:'No se recibió el archivo.',
+    TIPO_INVALIDO:'Tipo de documento no válido.'
+  })[e] || 'No se pudo completar. Inténtalo otra vez.';
+}
+
+/* ---------- pantallas ---------- */
+function verPantalla(cual){
+  ['pCargando','pError','pListo','pForm'].forEach(function(p){ $(p).hidden = (p !== cual); });
+  $('barra').hidden = (cual !== 'pForm') || cancelada;
+}
+function fallar(titulo, texto){
+  $('eTit').textContent = titulo;
+  $('eTxt').textContent = texto;
+  verPantalla('pError');
+}
+
+/* ---------- catalogos ---------- */
+function agrupar(lista){
+  const g = {};
+  (lista || []).forEach(function(c){ (g[c.cat] = g[c.cat] || []).push(c.val); });
+  return g;
+}
+async function cargarCatalogos(){
+  try{
+    const cache = JSON.parse(localStorage.getItem(K_CAT) || 'null');
+    if (cache && (Date.now() - cache.ts) < 86400000){ cats = cache.datos; return true; }
+  }catch(e){}
+  const r = await llamar({accion:'catalogos'});
+  if (r.estado === 401) return 'auth';
+  if (!r.ok || !r.datos || !r.datos.ok) return false;
+  cats = agrupar(r.datos.catalogos);
+  try{ localStorage.setItem(K_CAT, JSON.stringify({ts:Date.now(), datos:cats})); }catch(e){}
+  return true;
+}
+
+function llenarSelect(id, valores){
+  const s = $(id);
+  s.innerHTML = '<option value="">Selecciona</option>';
+  (valores || []).forEach(function(v){
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    s.appendChild(o);
+  });
+}
+
+/* Si el valor guardado ya no esta en el catalogo, lo agrega y lo marca. */
+function ponerValor(id, valor, avisoId){
+  if (!hay(valor)) return;
+  const s = $(id);
+  const existe = Array.prototype.some.call(s.options, function(o){ return o.value === valor; });
+  if (!existe){
+    const o = document.createElement('option');
+    o.value = valor; o.textContent = valor;
+    s.appendChild(o);
+    if (avisoId){
+      $(avisoId).textContent = 'Este valor ya no está en el catálogo. Elige uno nuevo si aplica.';
+      $(avisoId).hidden = false;
+    }
+  }
+  s.value = valor;
+}
+
+function llenarHoras(){
+  const s = $('hora');
+  for (let m = 0; m < 1440; m += 30){
+    const hh = String(Math.floor(m / 60)).padStart(2,'0');
+    const mm = String(m % 60).padStart(2,'0');
+    const o = document.createElement('option');
+    o.value = hh + ':' + mm; o.textContent = hh + ':' + mm;
+    s.appendChild(o);
+  }
+}
+
+/* ---------- factura ---------- */
+function pintarFactura(){
+  Array.prototype.forEach.call(document.querySelectorAll('#segFactura button'), function(b){
+    b.classList.toggle('on', b.dataset.v === factura);
+  });
+}
+Array.prototype.forEach.call(document.querySelectorAll('#segFactura button'), function(b){
+  b.addEventListener('click', function(){
+    if (cancelada) return;
+    factura = b.dataset.v; pintarFactura(); revisar(); guardarBorrador();
+  });
+});
+
+/* ---------- recoleccion extra ---------- */
+function pintarExtra(){
+  $('swExtra').classList.toggle('on', extra);
+  $('cajaExtra').hidden = !extra;
+}
+$('swExtra').addEventListener('click', function(){
+  if (cancelada) return;
+  extra = !extra;
+  if (!extra) ['origen2','producto2','po2','so2'].forEach(function(id){ $(id).value = ''; });
+  pintarExtra(); guardarBorrador();
+});
+
+/* ---------- borrador ---------- */
+const CAMPOS = ['fecha','hora','tipoServicio','origen','destino','producto','tarimas','po','so',
+                'origen2','producto2','po2','so2','comentarios'];
+
+function leerForm(){
+  const o = {};
+  CAMPOS.forEach(function(id){ o[id] = $(id).value; });
+  o.factura = factura; o.extra = extra;
+  return o;
+}
+function guardarBorrador(){
+  if (MODO !== 'crear') return;
+  try{ localStorage.setItem(K_DRAFT, JSON.stringify(leerForm())); }catch(e){}
+}
+function restaurarBorrador(){
+  let b = null;
+  try{ b = JSON.parse(localStorage.getItem(K_DRAFT) || 'null'); }catch(e){}
+  if (!b) return false;
+  CAMPOS.forEach(function(id){ if (hay(b[id])) $(id).value = b[id]; });
+  factura = b.factura || ''; pintarFactura();
+  extra = !!b.extra; pintarExtra();
+  return CAMPOS.some(function(id){ return hay(b[id]); }) || hay(b.factura);
+}
+
+CAMPOS.forEach(function(id){
+  $(id).addEventListener('input',  function(){ revisar(); guardarBorrador(); });
+  $(id).addEventListener('change', function(){ revisar(); guardarBorrador(); });
+});
+
+/* ---------- validacion ---------- */
+const OBLIGATORIOS = ['fecha','hora','tipoServicio','origen','destino'];
+function completo(){
+  return OBLIGATORIOS.every(function(id){ return hay($(id).value); }) && hay(factura);
+}
+function revisar(){
+  $('btnEnviar').disabled = cancelada || !completo();
+}
+
+/* ---------- envio ---------- */
+function payload(){
+  return {
+    recoleccion : $('fecha').value + 'T' + $('hora').value,
+    tipoServicio: $('tipoServicio').value,
+    origen      : $('origen').value,
+    destino     : $('destino').value,
+    factura     : factura,
+    producto    : $('producto').value,
+    tarimas     : $('tarimas').value,
+    po          : $('po').value,
+    so          : $('so').value,
+    comentarios : $('comentarios').value,
+    origen2     : extra ? $('origen2').value   : '',
+    producto2   : extra ? $('producto2').value : '',
+    po2         : extra ? $('po2').value       : '',
+    so2         : extra ? $('so2').value       : ''
+  };
+}
+
+$('btnEnviar').addEventListener('click', async function(){
+  if (ocupado || !completo()) return;
+  ocupado = true;
+  const btn = $('btnEnviar');
+  const txt = btn.textContent;
+  btn.disabled = true; btn.textContent = 'Enviando…';
+
+  const cuerpo = Object.assign({accion: MODO === 'crear' ? 'crear' : 'completar'}, payload());
+  if (MODO === 'completar') cuerpo.f = FOLIO;
+
+  let r;
+  try { r = await llamar(cuerpo); }
+  catch(e){
+    ocupado = false; btn.disabled = false; btn.textContent = txt;
+    cinta('Sin señal. Inténtalo otra vez.', true); return;
+  }
+
+  ocupado = false;
+  if (!r.ok || !r.datos || !r.datos.ok){
+    btn.disabled = false; btn.textContent = txt;
+    cinta(errorLegible(r), true);
+    return;
+  }
+
+  if (MODO === 'crear'){
+    try{ localStorage.removeItem(K_DRAFT); }catch(e){}
+    verPantalla('pListo');
+  } else {
+    btn.disabled = false; btn.textContent = txt;
+    cinta('Cambios guardados');
+  }
+});
+
+$('btnOtra').addEventListener('click', function(){ location.href = location.pathname; });
+
+/* ---------- cancelacion ---------- */
+function cerrarHoja(){ $('velo').hidden = true; }
+$('btnVolver').addEventListener('click', cerrarHoja);
+$('velo').addEventListener('click', function(e){ if (e.target === $('velo')) cerrarHoja(); });
+
+$('btnCancelar').addEventListener('click', function(){
+  $('alertaDespacho').hidden = !despachado;
+  $('motivoReq').hidden = !despachado;
+  $('txtCancelar').textContent = despachado
+    ? 'Esta acción no se puede deshacer.'
+    : 'Esta acción no se puede deshacer. El motivo es opcional.';
+  $('velo').hidden = false;
+});
+
+$('btnConfirmarCancel').addEventListener('click', async function(){
+  if (ocupado) return;
+  const motivo = $('motivo').value.trim();
+  if (despachado && !motivo){ cinta('Escribe el motivo de la cancelación.', true); return; }
+
+  ocupado = true;
+  const b = $('btnConfirmarCancel');
+  b.disabled = true; b.textContent = 'Cancelando…';
+
+  let r;
+  try { r = await llamar({accion:'cancelar', f:FOLIO, motivo:motivo}); }
+  catch(e){
+    ocupado = false; b.disabled = false; b.textContent = 'Sí, cancelar';
+    cinta('Sin señal. Inténtalo otra vez.', true); return;
+  }
+
+  ocupado = false;
+  b.disabled = false; b.textContent = 'Sí, cancelar';
+
+  if (!r.ok || !r.datos || !r.datos.ok){ cinta(errorLegible(r), true); return; }
+
+  cerrarHoja();
+  cancelada = true;
+  $('lTit').textContent = 'Solicitud cancelada';
+  $('lTxt').textContent = 'Transportes y Aduanas reciben el aviso en unos minutos.';
+  $('btnOtra').hidden = true;
+  verPantalla('pListo');
+});
+
+/* ---------- arranque ---------- */
+function pintarHero(d){
+  if (MODO === 'crear'){
+    $('hRotulo').textContent = 'Nueva solicitud';
+    $('hFolio').textContent  = new Date().toLocaleDateString('es-MX', {day:'numeric', month:'long'});
+    $('hFolio').classList.add('nueva');
+  } else {
+    $('hRotulo').textContent = 'Número de solicitud';
+    $('hFolio').textContent  = d.Folio || FOLIO;
+    $('hFolio').classList.remove('nueva');
+    $('hQuien').textContent   = d.Solicitante || '—';
+    $('hEstatus').textContent = d.Estatus || '—';
+    $('hUnidad').textContent  = hay(d.TruckId) ? d.TruckId : 'Sin asignar';
+    $('hGrid').hidden = false;
+  }
+}
+
+function volcarSolicitud(d){
+  const rec = (d.Recoleccion || '').split('T');
+  if (rec.length === 2){ $('fecha').value = rec[0]; $('hora').value = rec[1]; }
+  ponerValor('tipoServicio', d.TipoServicio);
+  ponerValor('origen',   d.Origen,   'fueraOrigen');
+  ponerValor('destino',  d.Destino,  'fueraDestino');
+  ponerValor('producto', d.Producto, 'fueraProducto');
+  $('tarimas').value     = d.Tarimas || '';
+  $('po').value          = d.PO || '';
+  $('so').value          = d.SO || '';
+  $('comentarios').value = d.Comentarios || '';
+  factura = d.Factura || ''; pintarFactura();
+
+  extra = hay(d.Origen2);
+  if (extra){
+    ponerValor('origen2',   d.Origen2,   'fueraOrigen2');
+    ponerValor('producto2', d.Producto2, 'fueraProducto2');
+    $('po2').value = d.PO2 || '';
+    $('so2').value = d.SO2 || '';
+  }
+  pintarExtra();
+}
+
+function bloquearTodo(){
+  Array.prototype.forEach.call(
+    document.querySelectorAll('#pForm input, #pForm select, #pForm textarea'),
+    function(el){ el.disabled = true; }
+  );
+  Array.prototype.forEach.call(document.querySelectorAll('#segFactura button'), function(b){ b.disabled = true; });
+  $('swExtra').disabled = true;
+}
+
+async function arrancar(){
+  llenarHoras();
+  $('fecha').min = new Date().toISOString().slice(0,10);
+
+  if (!TOKEN){
+    fallar('Enlace incompleto', 'Abre la app desde tu enlace personal. Si no lo tienes, pídelo a Transportes.');
+    return;
+  }
+
+  let cat;
+  try { cat = await cargarCatalogos(); }
+  catch(e){ fallar('Sin conexión', 'Revisa tu señal y vuelve a abrir la app.'); return; }
+
+  if (cat === 'auth'){
+    fallar('Acceso no válido', 'Tu enlace ya no funciona. Pide uno nuevo a Transportes.');
+    return;
+  }
+  if (!cat){
+    fallar('No se pudieron cargar los catálogos', 'Inténtalo de nuevo en un momento.');
+    return;
+  }
+
+  llenarSelect('tipoServicio', cats.Servicio);
+  llenarSelect('origen',    cats.Lugar);
+  llenarSelect('destino',   cats.Lugar);
+  llenarSelect('origen2',   cats.Lugar);
+  llenarSelect('producto',  cats.Producto);
+  llenarSelect('producto2', cats.Producto);
+
+  if (MODO === 'completar'){
+    let r;
+    try { r = await llamar({accion:'consulta', f:FOLIO}); }
+    catch(e){ fallar('Sin conexión', 'Revisa tu señal y vuelve a abrir la app.'); return; }
+
+    if (r.estado === 401){
+      fallar('Acceso no válido', 'Tu enlace ya no funciona. Pide uno nuevo a Transportes.');
+      return;
+    }
+    if (!r.ok || !r.datos || !r.datos.ok){
+      fallar('No encontramos esa solicitud', 'Revisa el número o ábrela desde el enlace de tu hoja de captura.');
+      return;
+    }
+
+    const d = r.datos;
+    despachado = (String(d.Despachado).toLowerCase() === 'true');
+    cancelada  = (d.Estatus === 'Cancelada');
+
+    pintarHero(d);
+    volcarSolicitud(d);
+    $('btnEnviar').textContent = 'Guardar cambios';
+    $('btnCancelar').hidden = cancelada;
+
+    if (cancelada){ $('avisoCancelada').hidden = false; bloquearTodo(); }
+  } else {
+    pintarHero(null);
+    const habia = restaurarBorrador();
+    if (habia) cinta('Recuperamos lo que habías capturado');
+  }
+
+  revisar();
+  verPantalla('pForm');
+}
+
+arrancar();
+</script>
+</body>
+</html>
