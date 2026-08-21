@@ -68,8 +68,9 @@
     background-repeat:no-repeat; background-position:right 11px center; background-size:18px; padding-right:36px;}
   textarea{min-height:84px; resize:vertical; line-height:1.4;}
   input:focus, select:focus, textarea:focus{outline:0; border-color:var(--oro); box-shadow:0 0 0 3px rgba(240,168,31,.18);}
-  input:disabled, select:disabled, textarea:disabled{background:#F4F3EE; color:var(--gris);}
+  input:disabled, select:disabled, textarea:disabled{background:#F4F3EE; color:#9C9A92;}
   .fuera{font-size:12.5px; color:var(--oro-osc); margin-top:6px; font-weight:600;}
+  .fuera.err{color:var(--rojo);}
 
   /* ---------- segmentado Si/No ---------- */
   .seg{display:grid; grid-template-columns:1fr 1fr; gap:8px;}
@@ -205,13 +206,14 @@
       </div>
       <div class="campo">
         <label for="origen">Origen <span class="req">*</span></label>
-        <select id="origen"><option value="">Selecciona</option></select>
+        <select id="origen" disabled><option value="">Elige primero el tipo de servicio</option></select>
         <div class="fuera" id="fueraOrigen" hidden></div>
       </div>
       <div class="campo">
         <label for="destino">Destino <span class="req">*</span></label>
-        <select id="destino"><option value="">Selecciona</option></select>
+        <select id="destino" disabled><option value="">Elige primero el tipo de servicio</option></select>
         <div class="fuera" id="fueraDestino" hidden></div>
+        <div class="fuera err" id="avisoMismo" hidden>Origen y destino no pueden ser el mismo lugar.</div>
       </div>
       <div class="campo">
         <label>¿Lleva factura? <span class="req">*</span></label>
@@ -253,7 +255,7 @@
     <div class="caja oro" id="cajaExtra" hidden>
       <div class="campo">
         <label for="origen2">Origen 2</label>
-        <select id="origen2"><option value="">Selecciona</option></select>
+        <select id="origen2" disabled><option value="">Elige primero el tipo de servicio</option></select>
         <div class="fuera" id="fueraOrigen2" hidden></div>
       </div>
       <div class="campo">
@@ -309,6 +311,14 @@
 <script>
 /* ===================== CONFIGURACION ===================== */
 const API = "https://default0b031fc984e1487c945fe6dbd618cd.02.environment.api.powerplatform.com:443/powerautomate/automations/direct/cu/22/workflows/747cffcda6e148c6a81ac143e9899342/triggers/manual/paths/invoke?api-version=1&sp=%2Ftriggers%2Fmanual%2Frun&sv=1.0&sig=SO0nNdpk41WNGlPeAmB86Db7Y6RmErvOXX9oSHkNT4k";
+
+/* Que grupo de lugares aplica a Origen y a Destino segun el tipo de servicio.
+   Origen 2 usa el mismo grupo que Origen. */
+const REGLAS = {
+  'Importación': {origen:'Norte',    destino:'Baja'},
+  'Exportación': {origen:'Baja',     destino:'Norte'},
+  'Nacional'   : {origen:'Nacional', destino:'Nacional'}
+};
 /* ========================================================= */
 
 const K_TOKEN = 'tfb_compras_token';
@@ -376,7 +386,9 @@ function fallar(titulo, texto){
 /* ---------- catalogos ---------- */
 function agrupar(lista){
   const g = {};
-  (lista || []).forEach(function(c){ (g[c.cat] = g[c.cat] || []).push(c.val); });
+  (lista || []).forEach(function(c){
+    (g[c.cat] = g[c.cat] || []).push({val:c.val, grp:c.grp});
+  });
   return g;
 }
 async function cargarCatalogos(){
@@ -392,31 +404,45 @@ async function cargarCatalogos(){
   return true;
 }
 
-function llenarSelect(id, valores){
+function soloVals(arr){
+  return (arr || []).map(function(o){ return o.val; });
+}
+/* Lugares de un grupo, sin repetidos (Taylor Baja California vive en dos grupos). */
+function lugaresDe(grupo){
+  const vistos = {}, salida = [];
+  (cats.Lugar || []).forEach(function(o){
+    if (o.grp !== grupo || vistos[o.val]) return;
+    vistos[o.val] = 1; salida.push(o.val);
+  });
+  return salida;
+}
+
+function llenarSelect(id, valores, textoVacio){
   const s = $(id);
-  s.innerHTML = '<option value="">Selecciona</option>';
+  s.innerHTML = '<option value="">' + (textoVacio || 'Selecciona') + '</option>';
   (valores || []).forEach(function(v){
     const o = document.createElement('option');
     o.value = v; o.textContent = v;
     s.appendChild(o);
   });
 }
+function tieneOpcion(id, valor){
+  return Array.prototype.some.call($(id).options, function(o){ return o.value === valor; });
+}
 
 /* Si el valor guardado ya no esta en el catalogo, lo agrega y lo marca. */
 function ponerValor(id, valor, avisoId){
   if (!hay(valor)) return;
-  const s = $(id);
-  const existe = Array.prototype.some.call(s.options, function(o){ return o.value === valor; });
-  if (!existe){
+  if (!tieneOpcion(id, valor)){
     const o = document.createElement('option');
     o.value = valor; o.textContent = valor;
-    s.appendChild(o);
+    $(id).appendChild(o);
     if (avisoId){
-      $(avisoId).textContent = 'Este valor ya no está en el catálogo. Elige uno nuevo si aplica.';
+      $(avisoId).textContent = 'Este valor ya no aplica para el tipo de servicio. Elige uno nuevo.';
       $(avisoId).hidden = false;
     }
   }
-  s.value = valor;
+  $(id).value = valor;
 }
 
 function llenarHoras(){
@@ -428,6 +454,34 @@ function llenarHoras(){
     o.value = hh + ':' + mm; o.textContent = hh + ':' + mm;
     s.appendChild(o);
   }
+}
+
+/* ---------- lugares segun tipo de servicio ---------- */
+function aplicarServicio(){
+  const tipo = $('tipoServicio').value;
+  const r = REGLAS[tipo];
+
+  const prev = {origen:$('origen').value, destino:$('destino').value, origen2:$('origen2').value};
+
+  ['fueraOrigen','fueraDestino','fueraOrigen2'].forEach(function(id){ $(id).hidden = true; });
+
+  if (!r){
+    ['origen','destino','origen2'].forEach(function(id){
+      llenarSelect(id, [], 'Elige primero el tipo de servicio');
+      $(id).disabled = true;
+    });
+    return;
+  }
+
+  llenarSelect('origen',  lugaresDe(r.origen));
+  llenarSelect('destino', lugaresDe(r.destino));
+  llenarSelect('origen2', lugaresDe(r.origen));
+  ['origen','destino','origen2'].forEach(function(id){ $(id).disabled = cancelada; });
+
+  /* conserva lo elegido solo si sigue siendo valido; si no, se limpia */
+  ['origen','destino','origen2'].forEach(function(id){
+    if (prev[id] && tieneOpcion(id, prev[id])) $(id).value = prev[id];
+  });
 }
 
 /* ---------- factura ---------- */
@@ -458,6 +512,7 @@ $('swExtra').addEventListener('click', function(){
 /* ---------- borrador ---------- */
 const CAMPOS = ['fecha','hora','tipoServicio','origen','destino','producto','tarimas','po','so',
                 'origen2','producto2','po2','so2','comentarios'];
+const LUGARES = ['origen','destino','origen2'];
 
 function leerForm(){
   const o = {};
@@ -473,9 +528,21 @@ function restaurarBorrador(){
   let b = null;
   try{ b = JSON.parse(localStorage.getItem(K_DRAFT) || 'null'); }catch(e){}
   if (!b) return false;
-  CAMPOS.forEach(function(id){ if (hay(b[id])) $(id).value = b[id]; });
+
+  if (hay(b.tipoServicio)) $('tipoServicio').value = b.tipoServicio;
+  aplicarServicio();
+
+  CAMPOS.forEach(function(id){
+    if (id === 'tipoServicio' || !hay(b[id])) return;
+    if (LUGARES.indexOf(id) >= 0){
+      if (tieneOpcion(id, b[id])) $(id).value = b[id];
+    } else {
+      $(id).value = b[id];
+    }
+  });
   factura = b.factura || ''; pintarFactura();
   extra = !!b.extra; pintarExtra();
+
   return CAMPOS.some(function(id){ return hay(b[id]); }) || hay(b.factura);
 }
 
@@ -483,14 +550,23 @@ CAMPOS.forEach(function(id){
   $(id).addEventListener('input',  function(){ revisar(); guardarBorrador(); });
   $(id).addEventListener('change', function(){ revisar(); guardarBorrador(); });
 });
+$('tipoServicio').addEventListener('change', function(){
+  aplicarServicio(); revisar(); guardarBorrador();
+});
 
 /* ---------- validacion ---------- */
 const OBLIGATORIOS = ['fecha','hora','tipoServicio','origen','destino'];
+function mismoLugar(){
+  const o = $('origen').value, d = $('destino').value;
+  return hay(o) && hay(d) && o === d;
+}
 function completo(){
   return OBLIGATORIOS.every(function(id){ return hay($(id).value); }) && hay(factura);
 }
 function revisar(){
-  $('btnEnviar').disabled = cancelada || !completo();
+  const choca = mismoLugar();
+  $('avisoMismo').hidden = !choca;
+  $('btnEnviar').disabled = cancelada || choca || !completo();
 }
 
 /* ---------- envio ---------- */
@@ -514,7 +590,7 @@ function payload(){
 }
 
 $('btnEnviar').addEventListener('click', async function(){
-  if (ocupado || !completo()) return;
+  if (ocupado || !completo() || mismoLugar()) return;
   ocupado = true;
   const btn = $('btnEnviar');
   const txt = btn.textContent;
@@ -611,9 +687,12 @@ function pintarHero(d){
 function volcarSolicitud(d){
   const rec = (d.Recoleccion || '').split('T');
   if (rec.length === 2){ $('fecha').value = rec[0]; $('hora').value = rec[1]; }
+
   ponerValor('tipoServicio', d.TipoServicio);
-  ponerValor('origen',   d.Origen,   'fueraOrigen');
-  ponerValor('destino',  d.Destino,  'fueraDestino');
+  aplicarServicio();
+
+  ponerValor('origen',  d.Origen,  'fueraOrigen');
+  ponerValor('destino', d.Destino, 'fueraDestino');
   ponerValor('producto', d.Producto, 'fueraProducto');
   $('tarimas').value     = d.Tarimas || '';
   $('po').value          = d.PO || '';
@@ -662,12 +741,9 @@ async function arrancar(){
     return;
   }
 
-  llenarSelect('tipoServicio', cats.Servicio);
-  llenarSelect('origen',    cats.Lugar);
-  llenarSelect('destino',   cats.Lugar);
-  llenarSelect('origen2',   cats.Lugar);
-  llenarSelect('producto',  cats.Producto);
-  llenarSelect('producto2', cats.Producto);
+  llenarSelect('tipoServicio', soloVals(cats.Servicio));
+  llenarSelect('producto',     soloVals(cats.Producto));
+  llenarSelect('producto2',    soloVals(cats.Producto));
 
   if (MODO === 'completar'){
     let r;
@@ -695,6 +771,7 @@ async function arrancar(){
     if (cancelada){ $('avisoCancelada').hidden = false; bloquearTodo(); }
   } else {
     pintarHero(null);
+    aplicarServicio();
     const habia = restaurarBorrador();
     if (habia) cinta('Recuperamos lo que habías capturado');
   }
