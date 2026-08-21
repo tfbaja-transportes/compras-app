@@ -322,8 +322,11 @@ const REGLAS = {
 /* ========================================================= */
 
 const K_TOKEN = 'tfb_compras_token';
-const K_CAT   = 'tfb_compras_catalogos';
+const K_CAT   = 'tfb_compras_catalogos_v2';   /* sube el numero si cambia la forma de los catalogos */
 const K_DRAFT = 'tfb_compras_borrador';
+
+/* limpia versiones anteriores del cache para que nadie quede con el formato viejo */
+try{ localStorage.removeItem('tfb_compras_catalogos'); }catch(e){}
 
 const P = new URLSearchParams(location.search);
 if (P.get('t')) { try{ localStorage.setItem(K_TOKEN, P.get('t')); }catch(e){} }
@@ -394,7 +397,11 @@ function agrupar(lista){
 async function cargarCatalogos(){
   try{
     const cache = JSON.parse(localStorage.getItem(K_CAT) || 'null');
-    if (cache && (Date.now() - cache.ts) < 86400000){ cats = cache.datos; return true; }
+    /* solo sirve si es reciente y trae la forma nueva {val,grp} */
+    const util = cache && (Date.now() - cache.ts) < 86400000
+              && cache.datos && cache.datos.Lugar
+              && cache.datos.Lugar[0] && typeof cache.datos.Lugar[0] === 'object';
+    if (util){ cats = cache.datos; return true; }
   }catch(e){}
   const r = await llamar({accion:'catalogos'});
   if (r.estado === 401) return 'auth';
