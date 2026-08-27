@@ -54,6 +54,32 @@
   .caja{background:var(--blanco); border:1px solid var(--linea); border-radius:var(--radius); padding:16px;}
   .caja.oro{border-color:var(--oro); background:#FFFDF8;}
 
+  /* ---------- acceso a pendientes ---------- */
+  .acceso{display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
+    background:var(--oro-suave); border:1.5px solid var(--oro); border-radius:var(--radius);
+    padding:14px 16px; margin-top:16px; font-family:inherit; font-size:15.5px; font-weight:600;
+    color:var(--oro-osc); text-align:left; cursor:pointer;}
+  .acceso.neutro{background:var(--blanco); border-color:var(--linea); color:var(--gris); font-weight:500;}
+  .acceso .flecha{font-size:19px; line-height:1; flex-shrink:0;}
+
+  /* ---------- tarjetas de la lista ---------- */
+  .tarj{display:block; width:100%; text-align:left; background:var(--blanco); border:1px solid var(--linea);
+    border-radius:var(--radius); padding:14px 16px; margin-bottom:10px; font-family:inherit; cursor:pointer;}
+  .tarj.pend{border-color:var(--oro); background:#FFFDF8;}
+  .tarj-top{display:flex; justify-content:space-between; align-items:baseline; gap:10px;}
+  .tarj-folio{font-family:'Barlow Semi Condensed'; font-weight:700; font-size:19px; color:var(--carbon);}
+  .tarj-fecha{font-size:13px; color:var(--gris); white-space:nowrap;}
+  .tarj-ruta{font-size:15px; color:var(--carbon); margin-top:4px; line-height:1.3;}
+  .tarj-pie{display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap;}
+  .chip{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+    padding:3px 9px; border-radius:99px;}
+  .chip-est{background:#EFEEE8; color:var(--gris);}
+  .chip-pend{background:var(--oro-suave); color:var(--oro-osc); border:1px solid var(--oro);}
+  .vacio{text-align:center; color:var(--gris); padding:44px 20px; font-size:15.5px;}
+  .btn-volver{display:block; width:100%; margin-top:20px; background:var(--blanco);
+    border:1.5px solid var(--linea); border-radius:var(--radius); padding:15px;
+    font-family:inherit; font-size:16px; font-weight:600; color:var(--carbon); cursor:pointer;}
+
   /* ---------- campos ---------- */
   .campo{margin-bottom:14px;}
   .campo:last-child{margin-bottom:0;}
@@ -79,6 +105,7 @@
   .seg button.on{background:var(--hoja-suave); border-color:var(--hoja); color:var(--hoja-osc);}
   .seg button:disabled{opacity:.55; cursor:default;}
   .seg button:focus-visible, .sw:focus-visible, .cta:focus-visible, .btn-txt:focus-visible,
+  .acceso:focus-visible, .tarj:focus-visible, .btn-volver:focus-visible,
   input:focus-visible, select:focus-visible, textarea:focus-visible{outline:3px solid var(--oro); outline-offset:2px;}
 
   /* ---------- interruptor de recoleccion extra ---------- */
@@ -182,11 +209,24 @@
     <button class="cta" id="btnOtra">Crear otra solicitud</button>
   </div>
 
+  <!-- ============ LISTA DE MIS SOLICITUDES ============ -->
+  <main id="pLista" hidden>
+    <h2>Mis solicitudes</h2>
+    <div id="listaCajas"></div>
+    <button type="button" class="btn-volver" id="btnVolverForm">Volver a nueva solicitud</button>
+  </main>
+
+  <!-- ============ FORMULARIO ============ -->
   <main id="pForm" hidden>
 
     <div class="aviso aviso-rojo" id="avisoCancelada" hidden>
       Esta solicitud está cancelada. Ya no se puede editar.
     </div>
+
+    <button type="button" class="acceso" id="acceso" hidden>
+      <span id="accesoTxt"></span>
+      <span class="flecha">&rarr;</span>
+    </button>
 
     <h2>Datos de la solicitud</h2>
     <div class="caja">
@@ -244,6 +284,9 @@
           <label for="so">SO</label>
           <input type="text" id="so" inputmode="numeric">
         </div>
+      </div>
+      <div class="fuera" id="avisoIncompleta" hidden>
+        Sin producto, tarimas, PO y SO tu solicitud queda incompleta y Transportes no podrá programarla.
       </div>
     </div>
 
@@ -335,10 +378,13 @@ if (!TOKEN) { try{ TOKEN = localStorage.getItem(K_TOKEN) || ''; }catch(e){} }
 const FOLIO = (P.get('f') || '').trim();
 const MODO  = FOLIO ? 'completar' : 'crear';
 
-let cats = {}, usuario = '', despachado = false, cancelada = false, ocupado = false, factura = '', extra = false;
+let cats = {}, usuario = '', mias = [],
+    despachado = false, cancelada = false, ocupado = false, factura = '', extra = false;
 
 const $ = id => document.getElementById(id);
 const hay = v => !!(v && String(v).trim());
+const esVerdad = v => v === true || String(v).trim().toLowerCase() === 'true';
+function esc(s){ const d = document.createElement('div'); d.textContent = s == null ? '' : String(s); return d.innerHTML; }
 
 /* ---------- comunicacion ---------- */
 async function llamar(cuerpo){
@@ -377,7 +423,7 @@ function errorLegible(r){
 
 /* ---------- pantallas ---------- */
 function verPantalla(cual){
-  ['pCargando','pError','pListo','pForm'].forEach(function(p){ $(p).hidden = (p !== cual); });
+  ['pCargando','pError','pListo','pForm','pLista'].forEach(function(p){ $(p).hidden = (p !== cual); });
   $('barra').hidden = (cual !== 'pForm') || cancelada;
 }
 function fallar(titulo, texto){
@@ -565,6 +611,8 @@ $('tipoServicio').addEventListener('change', function(){
 
 /* ---------- validacion ---------- */
 const OBLIGATORIOS = ['fecha','hora','tipoServicio','origen','destino'];
+const RECOMENDADOS = ['producto','tarimas','po','so'];
+
 function mismoLugar(){
   const o = $('origen').value, d = $('destino').value;
   return hay(o) && hay(d) && o === d;
@@ -572,11 +620,74 @@ function mismoLugar(){
 function completo(){
   return OBLIGATORIOS.every(function(id){ return hay($(id).value); }) && hay(factura);
 }
+function faltanRecomendados(){
+  return RECOMENDADOS.some(function(id){ return !hay($(id).value); });
+}
 function revisar(){
   const choca = mismoLugar();
   $('avisoMismo').hidden = !choca;
+  $('avisoIncompleta').hidden = !faltanRecomendados();
   $('btnEnviar').disabled = cancelada || choca || !completo();
 }
+
+/* ---------- lista de mis solicitudes ---------- */
+async function cargarMias(){
+  try{
+    const r = await llamar({accion:'mis'});
+    if (r.ok && r.datos && r.datos.ok) mias = r.datos.solicitudes || [];
+  }catch(e){}
+}
+
+function pintarAcceso(){
+  const pend = mias.filter(function(s){ return esVerdad(s.falta); }).length;
+  const tot  = mias.length;
+  const a = $('acceso');
+  if (pend > 0){
+    a.className = 'acceso';
+    $('accesoTxt').textContent = pend + (pend === 1
+      ? ' solicitud con datos pendientes'
+      : ' solicitudes con datos pendientes');
+    a.hidden = false;
+  } else if (tot > 0){
+    a.className = 'acceso neutro';
+    $('accesoTxt').textContent = 'Ver mis ' + tot + (tot === 1 ? ' solicitud activa' : ' solicitudes activas');
+    a.hidden = false;
+  } else {
+    a.hidden = true;
+  }
+}
+
+function pintarLista(){
+  /* pendientes primero, conservando el orden por fecha que ya trae la API */
+  const pend  = mias.filter(function(s){ return esVerdad(s.falta); });
+  const listo = mias.filter(function(s){ return !esVerdad(s.falta); });
+  const orden = pend.concat(listo);
+
+  const cont = $('listaCajas');
+  if (!orden.length){
+    cont.innerHTML = '<div class="vacio">No tienes solicitudes activas.</div>';
+    return;
+  }
+  cont.innerHTML = orden.map(function(s){
+    const p = esVerdad(s.falta);
+    return '<button type="button" class="tarj' + (p ? ' pend' : '') + '" data-f="' + esc(s.folio) + '">'
+      + '<div class="tarj-top"><span class="tarj-folio">' + esc(s.folio) + '</span>'
+      + '<span class="tarj-fecha">' + esc(s.rec || '—') + '</span></div>'
+      + '<div class="tarj-ruta">' + esc(s.origen || '—') + ' &rarr; ' + esc(s.destino || '—') + '</div>'
+      + '<div class="tarj-pie"><span class="chip chip-est">' + esc(s.estatus || '—') + '</span>'
+      + (p ? '<span class="chip chip-pend">Faltan datos</span>' : '')
+      + '</div></button>';
+  }).join('');
+
+  Array.prototype.forEach.call(cont.querySelectorAll('.tarj'), function(b){
+    b.addEventListener('click', function(){
+      location.href = location.pathname + '?f=' + encodeURIComponent(b.dataset.f);
+    });
+  });
+}
+
+$('acceso').addEventListener('click', function(){ pintarLista(); verPantalla('pLista'); window.scrollTo(0,0); });
+$('btnVolverForm').addEventListener('click', function(){ verPantalla('pForm'); window.scrollTo(0,0); });
 
 /* ---------- envio ---------- */
 function payload(){
@@ -770,7 +881,7 @@ async function arrancar(){
     }
 
     const d = r.datos;
-    despachado = (String(d.Despachado).toLowerCase() === 'true');
+    despachado = esVerdad(d.Despachado);
     cancelada  = (d.Estatus === 'Cancelada');
 
     pintarHero(d);
@@ -788,6 +899,11 @@ async function arrancar(){
 
   revisar();
   verPantalla('pForm');
+
+  /* la lista se carga despues de pintar, para que la app abra de inmediato */
+  if (MODO === 'crear'){
+    cargarMias().then(pintarAcceso);
+  }
 }
 
 arrancar();
