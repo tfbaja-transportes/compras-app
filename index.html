@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Solicitud de transporte · Taylor Farms Baja</title>
+<meta name="theme-color" content="#191917">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Solicitudes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="manifest" href="manifest.json">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -24,7 +31,8 @@
   [hidden]{display:none !important;}
 
   /* ---------- encabezado ---------- */
-  header{background:var(--negro); color:#fff; padding:16px 20px;}
+  /* el padding superior deja espacio a la barra de estado del iPhone cuando la app va instalada */
+  header{background:var(--negro); color:#fff; padding:calc(16px + env(safe-area-inset-top)) 20px 16px;}
   .marca{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
   .marca img{height:44px; width:auto;}
   .marca .depto{font-size:12.5px; color:var(--oro); letter-spacing:.08em; text-transform:uppercase; font-weight:600;}
@@ -53,6 +61,10 @@
 
   .caja{background:var(--blanco); border:1px solid var(--linea); border-radius:var(--radius); padding:16px;}
   .caja.oro{border-color:var(--oro); background:#FFFDF8;}
+
+  /* ---------- regreso al inicio (la app instalada no tiene boton de atras) ---------- */
+  .btn-inicio{display:inline-block; margin-top:14px; background:none; border:0; padding:8px 2px;
+    font-family:inherit; font-size:15.5px; font-weight:600; color:var(--hoja-osc); cursor:pointer;}
 
   /* ---------- acceso a pendientes ---------- */
   .acceso{display:flex; align-items:center; justify-content:space-between; gap:12px; width:100%;
@@ -105,7 +117,7 @@
   .seg button.on{background:var(--hoja-suave); border-color:var(--hoja); color:var(--hoja-osc);}
   .seg button:disabled{opacity:.55; cursor:default;}
   .seg button:focus-visible, .sw:focus-visible, .cta:focus-visible, .btn-txt:focus-visible,
-  .acceso:focus-visible, .tarj:focus-visible, .btn-volver:focus-visible,
+  .acceso:focus-visible, .tarj:focus-visible, .btn-volver:focus-visible, .btn-inicio:focus-visible,
   input:focus-visible, select:focus-visible, textarea:focus-visible{outline:3px solid var(--oro); outline-offset:2px;}
 
   /* ---------- interruptor de recoleccion extra ---------- */
@@ -140,6 +152,8 @@
   .centro h3{font-family:'Barlow Semi Condensed'; font-weight:700; font-size:26px;}
   .centro p{color:var(--gris); font-size:15.5px;}
   .centro .cta{max-width:280px; margin-top:10px;}
+  .centro .btn-volver{max-width:280px; margin-top:6px;}
+  .vinc{width:100%; max-width:320px; text-align:left; margin-top:4px;}
   .giro{width:30px; height:30px; border:3px solid var(--linea); border-top-color:var(--oro);
     border-radius:50%; animation:g .8s linear infinite;}
   @keyframes g{to{transform:rotate(360deg)}}
@@ -200,6 +214,21 @@
     <div class="ico">&#128274;</div>
     <h3 id="eTit">Sin acceso</h3>
     <p id="eTxt"></p>
+    <button type="button" class="btn-volver" id="btnInicioErr" hidden>Volver al inicio</button>
+  </div>
+
+  <!-- ============ VINCULAR (primera vez en la app instalada o enlace vencido) ============ -->
+  <div class="centro" id="pVincular" hidden>
+    <div class="ico">&#128279;</div>
+    <h3>Vincula tu acceso</h3>
+    <p id="vTxt">Pega el enlace personal que te llegó por correo. Solo se hace una vez en este teléfono.</p>
+    <div class="campo vinc">
+      <label for="vEnlace">Enlace personal</label>
+      <input type="text" id="vEnlace" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false"
+             placeholder="https://tfbaja-transportes.github.io/…">
+      <div class="fuera err" id="vError" hidden></div>
+    </div>
+    <button type="button" class="cta" id="btnVincular">Vincular</button>
   </div>
 
   <div class="centro" id="pListo" hidden>
@@ -218,6 +247,8 @@
 
   <!-- ============ FORMULARIO ============ -->
   <main id="pForm" hidden>
+
+    <button type="button" class="btn-inicio" id="btnInicio" hidden>&lsaquo; Volver al inicio</button>
 
     <div class="aviso aviso-rojo" id="avisoCancelada" hidden>
       Esta solicitud está cancelada. Ya no se puede editar.
@@ -368,6 +399,8 @@ const K_TOKEN = 'tfb_compras_token';
 const K_CAT   = 'tfb_compras_catalogos_v2';   /* sube el numero si cambia la forma de los catalogos */
 const K_DRAFT = 'tfb_compras_borrador';
 
+const MSG_VENCIDO = 'Tu enlace ya no funciona. Pega aquí el enlace nuevo que te envió Transportes.';
+
 /* limpia versiones anteriores del cache para que nadie quede con el formato viejo */
 try{ localStorage.removeItem('tfb_compras_catalogos'); }catch(e){}
 
@@ -423,14 +456,66 @@ function errorLegible(r){
 
 /* ---------- pantallas ---------- */
 function verPantalla(cual){
-  ['pCargando','pError','pListo','pForm','pLista'].forEach(function(p){ $(p).hidden = (p !== cual); });
+  ['pCargando','pError','pVincular','pListo','pForm','pLista'].forEach(function(p){ $(p).hidden = (p !== cual); });
   $('barra').hidden = (cual !== 'pForm') || cancelada;
 }
 function fallar(titulo, texto){
   $('eTit').textContent = titulo;
   $('eTxt').textContent = texto;
+  /* la app instalada no tiene boton de atras ni de recargar: este boton es la salida */
+  const b = $('btnInicioErr');
+  b.textContent = (MODO === 'completar') ? 'Volver al inicio' : 'Reintentar';
+  b.hidden = !TOKEN;
   verPantalla('pError');
 }
+function irAlInicio(){ location.href = location.pathname; }
+$('btnInicioErr').addEventListener('click', irAlInicio);
+$('btnInicio').addEventListener('click', irAlInicio);
+
+/* ---------- vincular ----------
+   En iPhone, la app agregada a inicio guarda sus datos aparte de Safari, y los enlaces
+   de correo siempre abren en Safari. Esta pantalla es como la app instalada recibe el
+   token la primera vez o cuando el enlace vence. */
+function tokenDe(texto){
+  const s = String(texto || '').trim();
+  if (!s) return '';
+  let t = '';
+  try{ t = new URL(s).searchParams.get('t') || ''; }catch(e){}
+  if (!t){
+    const m = s.match(/[?&]t=([^&#\s]+)/);
+    if (m){ try{ t = decodeURIComponent(m[1]); }catch(e){ t = m[1]; } }
+  }
+  if (!t) t = s;   /* tambien acepta el token pegado solo */
+  t = t.trim();
+  return /^[A-Za-z0-9_-]{16,}$/.test(t) ? t : '';
+}
+
+function pedirVinculo(mensaje){
+  try{ localStorage.removeItem(K_TOKEN); localStorage.removeItem(K_CAT); }catch(e){}
+  TOKEN = '';
+  $('vTxt').textContent = mensaje
+    || 'Pega el enlace personal que te llegó por correo. Solo se hace una vez en este teléfono.';
+  $('vError').hidden = true;
+  $('vEnlace').value = '';
+  verPantalla('pVincular');
+}
+
+$('btnVincular').addEventListener('click', function(){
+  const t = tokenDe($('vEnlace').value);
+  if (!t){
+    $('vError').textContent = 'Ese texto no trae un enlace personal válido. Cópialo completo del correo.';
+    $('vError').hidden = false;
+    return;
+  }
+  try{ localStorage.setItem(K_TOKEN, t); localStorage.removeItem(K_CAT); }catch(e){}
+  const q = new URLSearchParams();
+  q.set('t', t);
+  if (FOLIO) q.set('f', FOLIO);
+  location.replace(location.pathname + '?' + q.toString());
+});
+$('vEnlace').addEventListener('keydown', function(e){
+  if (e.key === 'Enter') $('btnVincular').click();
+});
 
 /* ---------- catalogos ---------- */
 function agrupar(lista){
@@ -727,6 +812,8 @@ $('btnEnviar').addEventListener('click', async function(){
   }
 
   ocupado = false;
+  /* el borrador sigue guardado: al vincular de nuevo se recupera lo capturado */
+  if (r.estado === 401){ btn.textContent = txt; pedirVinculo(MSG_VENCIDO); return; }
   if (!r.ok || !r.datos || !r.datos.ok){
     btn.disabled = false; btn.textContent = txt;
     cinta(errorLegible(r), true);
@@ -742,7 +829,7 @@ $('btnEnviar').addEventListener('click', async function(){
   }
 });
 
-$('btnOtra').addEventListener('click', function(){ location.href = location.pathname; });
+$('btnOtra').addEventListener('click', irAlInicio);
 
 /* ---------- cancelacion ---------- */
 function cerrarHoja(){ $('velo').hidden = true; }
@@ -777,13 +864,14 @@ $('btnConfirmarCancel').addEventListener('click', async function(){
   ocupado = false;
   b.disabled = false; b.textContent = 'Sí, cancelar';
 
+  if (r.estado === 401){ cerrarHoja(); pedirVinculo(MSG_VENCIDO); return; }
   if (!r.ok || !r.datos || !r.datos.ok){ cinta(errorLegible(r), true); return; }
 
   cerrarHoja();
   cancelada = true;
   $('lTit').textContent = 'Solicitud cancelada';
   $('lTxt').textContent = 'Transportes y Aduanas reciben el aviso en unos minutos.';
-  $('btnOtra').hidden = true;
+  $('btnOtra').textContent = 'Volver al inicio';
   verPantalla('pListo');
 });
 
@@ -844,19 +932,13 @@ async function arrancar(){
   llenarHoras();
   $('fecha').min = new Date().toISOString().slice(0,10);
 
-  if (!TOKEN){
-    fallar('Enlace incompleto', 'Abre la app desde tu enlace personal. Si no lo tienes, pídelo a Transportes.');
-    return;
-  }
+  if (!TOKEN){ pedirVinculo(); return; }
 
   let cat;
   try { cat = await cargarCatalogos(); }
-  catch(e){ fallar('Sin conexión', 'Revisa tu señal y vuelve a abrir la app.'); return; }
+  catch(e){ fallar('Sin conexión', 'Revisa tu señal y vuelve a intentar.'); return; }
 
-  if (cat === 'auth'){
-    fallar('Acceso no válido', 'Tu enlace ya no funciona. Pide uno nuevo a Transportes.');
-    return;
-  }
+  if (cat === 'auth'){ pedirVinculo(MSG_VENCIDO); return; }
   if (!cat){
     fallar('No se pudieron cargar los catálogos', 'Inténtalo de nuevo en un momento.');
     return;
@@ -869,12 +951,9 @@ async function arrancar(){
   if (MODO === 'completar'){
     let r;
     try { r = await llamar({accion:'consulta', f:FOLIO}); }
-    catch(e){ fallar('Sin conexión', 'Revisa tu señal y vuelve a abrir la app.'); return; }
+    catch(e){ fallar('Sin conexión', 'Revisa tu señal y vuelve a intentar.'); return; }
 
-    if (r.estado === 401){
-      fallar('Acceso no válido', 'Tu enlace ya no funciona. Pide uno nuevo a Transportes.');
-      return;
-    }
+    if (r.estado === 401){ pedirVinculo(MSG_VENCIDO); return; }
     if (!r.ok || !r.datos || !r.datos.ok){
       fallar('No encontramos esa solicitud', 'Revisa el número o ábrela desde el enlace de tu hoja de captura.');
       return;
@@ -888,6 +967,7 @@ async function arrancar(){
     volcarSolicitud(d);
     $('btnEnviar').textContent = 'Guardar cambios';
     $('btnCancelar').hidden = cancelada;
+    $('btnInicio').hidden = false;
 
     if (cancelada){ $('avisoCancelada').hidden = false; bloquearTodo(); }
   } else {
